@@ -1624,9 +1624,10 @@ namespace ChatBox.Client
                             await _hubConnection.InvokeAsync("FileReady", _userId, msg.FileId, msg.Content, msg.FileSize);
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         msg.IsTransferring = false;
+                        Dispatcher.Invoke(() => MessageBox.Show($"Failed to upload image {msg.Content}: {ex.Message}", "Upload Error", MessageBoxButton.OK, MessageBoxImage.Error));
                     }
                 }));
             }

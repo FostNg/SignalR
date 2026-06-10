@@ -1139,7 +1139,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <emoji:TextBlock x:Name="txtMsgContent" Text="{Binding DisplayText}" FontSize="15" Foreground="#2E3338" TextWrapping="Wrap" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="txtMsgContent" Text="{Binding DisplayText, Mode=OneWay}" FontSize="15" Foreground="#2E3338" TextWrapping="Wrap" HorizontalAlignment="Left" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0" Margin="-2,0,0,0"/>
 
                                 <!-- Reactions Display Panel -->
                                 <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0" HorizontalAlignment="Left">
@@ -1207,7 +1207,7 @@
                                 <Setter TargetName="ImageSenderDetails" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ReactionsPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="HeaderPanel" Property="FlowDirection" Value="RightToLeft"/>
-                                <Setter TargetName="lblTimestamp" Property="Margin" Value="0,0,8,0"/>
+                                <Setter TargetName="lblTimestamp" Property="Margin" Value="8,0,8,0"/>
                             </DataTrigger>
 
                             <!-- Draft image styling (dashed purple border) -->

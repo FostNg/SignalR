@@ -158,7 +158,7 @@ namespace LocalChat.Core.Services
                     using var stream = client.GetStream();
 
                     long offset = (long)i * ChunkSize;
-                    int length = (int)Math.Min(ChunkSize, (int)(totalSize - offset));
+                    int length = (int)Math.Min((long)ChunkSize, totalSize - offset);
 
                     // Build header
                     byte[] header = new byte[29];
