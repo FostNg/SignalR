@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="ChatBox.Client/ChatBox.Client.csproj" />
+  <Project Path="ChatBox.Server/ChatBox.Server.csproj" />
+  <Project Path="LocalChat.Core/ChatBox.Core.csproj" />
+</Solution>

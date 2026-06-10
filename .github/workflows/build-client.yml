@@ -1,0 +1,33 @@
+name: Build ChatBox Client
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub
+
+jobs:
+  build:
+    runs-on: windows-latest # Ứng dụng WPF bắt buộc phải build trên môi trường Windows
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x' # Cài đặt .NET 10
+
+    - name: Restore dependencies
+      run: dotnet restore ChatBox.Client/ChatBox.Client.csproj
+
+    - name: Build and Publish Client
+      run: dotnet publish ChatBox.Client/ChatBox.Client.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -o ./publish_exe
+
+    - name: Upload Artifact (ChatBox.Client.exe)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ChatBox-Client-Windows
+        path: ./publish_exe/
