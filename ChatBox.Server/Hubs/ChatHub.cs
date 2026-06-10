@@ -98,7 +98,7 @@ namespace ChatBox.Server.Hubs
             var msgId = Guid.NewGuid().ToString();
             var time = DateTime.UtcNow;
             await Clients.All.SendAsync("ReceiveMessage", msgId, "System", $"{username} has joined the chat.", "", time.ToString("O"), "[]");
-            OnLog?.Invoke($"[JOIN] {username}");
+            OnLog?.Invoke($"[SignalR JOIN] {username}");
 
             _onlineUsers[Context.ConnectionId] = username;
             await BroadcastOnlineUsersAsync();
@@ -115,7 +115,7 @@ namespace ChatBox.Server.Hubs
                 await db.SaveChangesAsync();
 
                 await Clients.All.SendAsync("ReceiveMessage", msg.Id, user.Username, content, user.AvatarBase64, msg.Timestamp.ToString("O"), "[]");
-                OnLog?.Invoke($"[MSG] {user.Username}: {content}");
+                OnLog?.Invoke($"[SignalR MSG] {user.Username}: {content}");
             }
         }
 
@@ -130,7 +130,7 @@ namespace ChatBox.Server.Hubs
                 await db.SaveChangesAsync();
 
                 await Clients.All.SendAsync("ReceiveFileReady", fileId, fileName, size, user.Username, user.AvatarBase64, msg.Timestamp.ToString("O"), "[]");
-                OnLog?.Invoke($"[FILE] {user.Username}: {fileName}");
+                OnLog?.Invoke($"[SignalR FILE] {user.Username}: {fileName}");
             }
         }
 
@@ -145,7 +145,7 @@ namespace ChatBox.Server.Hubs
                 user.AvatarBase64 = avatar;
                 await db.SaveChangesAsync();
                 
-                OnLog?.Invoke($"[PROFILE] {oldUsername} updated their profile to {username}.");
+                OnLog?.Invoke($"[SignalR PROFILE] {oldUsername} updated their profile to {username}.");
                 _onlineUsers[Context.ConnectionId] = username;
                 
                 await Clients.All.SendAsync("ReceiveProfileUpdate", userId, username, avatar, oldUsername);
@@ -169,13 +169,13 @@ namespace ChatBox.Server.Hubs
             {
                 db.MessageReactions.Remove(existingReaction);
                 await db.SaveChangesAsync();
-                OnLog?.Invoke($"[REACT] {user.Username} removed reaction {emoji} from {messageId}");
+                OnLog?.Invoke($"[SignalR REACT] {user.Username} removed reaction {emoji} from {messageId}");
             }
             else
             {
                 db.MessageReactions.Add(new MessageReaction { MessageId = messageId, UserId = userId, Emoji = emoji, CreatedAt = DateTime.UtcNow });
                 await db.SaveChangesAsync();
-                OnLog?.Invoke($"[REACT] {user.Username} reacted {emoji} to {messageId}");
+                OnLog?.Invoke($"[SignalR REACT] {user.Username} reacted {emoji} to {messageId}");
             }
 
             var reactions = await db.MessageReactions.Include(r => r.User).Where(r => r.MessageId == messageId).ToListAsync();
@@ -184,7 +184,18 @@ namespace ChatBox.Server.Hubs
 
         public async Task SendTyping(string username)
         {
+            OnLog?.Invoke($"[SignalR TYPING] {username} is typing...");
             await Clients.Others.SendAsync("UserTyping", username);
+        }
+
+        public async Task UpdateDownloadStatus(string username, string fileName, string status)
+        {
+            OnLog?.Invoke($"[SignalR DOWNLOAD] {username} is {status.ToLower()} file: {fileName}");
+        }
+        
+        public async Task UpdateUploadStatus(string username, string fileName, string status)
+        {
+            OnLog?.Invoke($"[SignalR UPLOAD] {username} is {status.ToLower()} file: {fileName}");
         }
         
         public static async Task ClearChatAsync(IHubContext<ChatHub> context)

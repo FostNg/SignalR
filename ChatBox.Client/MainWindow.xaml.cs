@@ -810,7 +810,12 @@ namespace ChatBox.Client
             if (!string.IsNullOrWhiteSpace(cleanText))
             {
                 string text = cleanText;
-                txtInput.Document.Blocks.Clear(); // Clear RichTextBox properly
+                if (txtInput is Emoji.Wpf.RichTextBox emojiBox) {
+                    emojiBox.Text = "";
+                } else {
+                    txtInput.Document.Blocks.Clear();
+                    txtInput.Document.Blocks.Add(new System.Windows.Documents.Paragraph());
+                }
 
                 var newMsg = new ChatMessage { MessageId = Guid.NewGuid().ToString(), Sender = string.IsNullOrWhiteSpace(_displayName) ? "User" : _displayName, Content = text, AvatarBase64 = _avatarBase64, IsMe = true, Timestamp = FormatTimestamp(DateTime.UtcNow.ToString("O")) };
                 _allMessages.Add(newMsg);
@@ -865,6 +870,11 @@ namespace ChatBox.Client
                     _chatViewMessages.Add(msg);
                 _currentTransferMessage = msg;
 
+                if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                {
+                    await _hubConnection.InvokeAsync("UpdateUploadStatus", _displayName, fileInfo.Name, "Uploading");
+                }
+
                 await _fileClient.UploadFileAsync(_serverIp, filePath, fileId);
 
                 msg.IsTransferring = false;
@@ -872,14 +882,14 @@ namespace ChatBox.Client
 
                 if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                 {
+                    await _hubConnection.InvokeAsync("UpdateUploadStatus", _displayName, fileInfo.Name, "Uploaded");
                     await _hubConnection.InvokeAsync("FileReady", _userId, fileId.ToString(), fileInfo.Name, fileInfo.Length);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Upload error or connection lost: " + ex.Message);
+                MessageBox.Show("Upload error: " + ex.Message);
                 if (_currentTransferMessage != null) _currentTransferMessage.IsTransferring = false;
-                BtnDisconnect_Click(null, null);
             }
         }
 
@@ -938,7 +948,17 @@ namespace ChatBox.Client
 
                     try
                     {
+                        if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                        {
+                            await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, msg.Content, "Downloading");
+                        }
+
                         await _fileClient.DownloadFileAsync(_serverIp, dialog.FileName, Guid.Parse(msg.FileId), msg.FileSize);
+                        
+                        if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                        {
+                            await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, msg.Content, "Downloaded");
+                        }
                         MessageBox.Show("Download complete!");
                     }
                     catch (Exception ex)
@@ -1199,8 +1219,18 @@ namespace ChatBox.Client
                     });
                 };
 
+                if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                {
+                    await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, fileMsg.Content, "Downloading");
+                }
+
                 await tempClient.DownloadFileAsync(_serverIp, cachedPath, Guid.Parse(fileMsg.FileId), fileMsg.FileSize);
                 fileMsg.LocalFilePath = cachedPath;
+
+                if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                {
+                    await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, fileMsg.Content, "Downloaded");
+                }
             }
             catch (Exception ex)
             {
@@ -1369,7 +1399,7 @@ namespace ChatBox.Client
             lightboxOverlay.Visibility = Visibility.Collapsed;
         }
 
-        private void LightboxDownload_Click(object sender, RoutedEventArgs e)
+        private async void LightboxDownload_Click(object sender, RoutedEventArgs e)
         {
             if (_lightboxCurrentMessage == null || string.IsNullOrEmpty(_lightboxCurrentMessage.LocalFilePath)) return;
 
@@ -1381,7 +1411,18 @@ namespace ChatBox.Client
             {
                 try
                 {
+                    if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                    {
+                        await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, _lightboxCurrentMessage.Content, "Downloading");
+                    }
+
                     File.Copy(_lightboxCurrentMessage.LocalFilePath, saveDialog.FileName, true);
+
+                    if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+                    {
+                        await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, _lightboxCurrentMessage.Content, "Downloaded");
+                    }
+
                     MessageBox.Show("Downloaded successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)

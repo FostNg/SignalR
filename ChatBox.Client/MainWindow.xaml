@@ -1027,12 +1027,13 @@
                     <DataTemplate>
                         <Grid x:Name="MsgGrid" Margin="0,4,0,4">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="50" x:Name="AvatarCol"/>
+                                <ColumnDefinition Width="50" x:Name="AvatarColLeft"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="0" x:Name="AvatarColRight"/>
                             </Grid.ColumnDefinitions>
                             
                             <!-- Avatar on the left -->
-                            <Grid x:Name="AvatarGrid" Grid.Column="0" Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center">
+                            <Grid x:Name="AvatarGridLeft" Grid.Column="0" Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center">
                                 <Ellipse x:Name="imgMsgAvatar" Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center">
                                     <Ellipse.Fill>
                                         <ImageBrush ImageSource="{Binding AvatarBase64, Converter={StaticResource Base64Converter}}" Stretch="UniformToFill"/>
@@ -1047,11 +1048,11 @@
                                            Visibility="{Binding AvatarBase64, Converter={StaticResource AvatarInitialsVisConverter}}"/>
                             </Grid>
                             
-                            <!-- Message Content Pane on the right -->
-                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Top">
-                                <StackPanel x:Name="HeaderPanel" Orientation="Horizontal" Margin="0,0,0,4">
+                            <!-- Message Content Pane -->
+                            <StackPanel x:Name="ContentPanel" Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+                                <StackPanel x:Name="HeaderPanel" Orientation="Horizontal" Margin="0,0,0,4" HorizontalAlignment="Left">
                                     <TextBlock x:Name="lblSenderName" Text="{Binding Sender}" FontWeight="Bold" FontSize="14" Foreground="#060607" VerticalAlignment="Bottom"/>
-                                    <TextBlock Text="{Binding Timestamp}" FontSize="11" Foreground="#747F8D" Margin="8,0,0,0" VerticalAlignment="Bottom"/>
+                                    <TextBlock x:Name="lblTimestamp" Text="{Binding Timestamp}" FontSize="11" Foreground="#747F8D" Margin="8,0,0,0" VerticalAlignment="Bottom"/>
                                 </StackPanel>                                <!-- File Attachment Embed (Discord Embed look) -->
                                 <Border x:Name="FileEmbedBorder" Background="#F2F3F5" CornerRadius="4" BorderBrush="#E3E5E8" BorderThickness="1" Padding="12" Margin="0,4,0,5" Visibility="{Binding ShowFileControl, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Left" Width="350">
                                     <Grid>
@@ -1061,10 +1062,10 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="📄" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left">
                                             <emoji:TextBlock Text="{Binding Content}" FontSize="13" FontWeight="Bold" Foreground="#060607" TextWrapping="Wrap"/>
                                             <TextBlock Text="File Attachment" FontSize="11" Foreground="#747F8D" Margin="0,1,0,6"/>
-                                            <Button x:Name="btnDownloadEmbed" Content="Download File" Tag="{Binding}" Background="#4F545C" Foreground="White" Width="95" Height="26" Cursor="Hand" Click="BtnDownload_Click" FontSize="11" FontWeight="Bold">
+                                            <Button x:Name="btnDownloadEmbed" Content="Download File" Tag="{Binding}" Background="#4F545C" Foreground="White" Width="95" Height="26" Cursor="Hand" Click="BtnDownload_Click" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left">
                                                 <Button.Resources>
                                                     <Style TargetType="Border">
                                                         <Setter Property="CornerRadius" Value="3"/>
@@ -1101,7 +1102,7 @@
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
-                                        <Image x:Name="imgEmbedControl" Source="{Binding LocalFilePath}" Stretch="Uniform" MaxWidth="340" MaxHeight="250"/>
+                                        <Image x:Name="imgEmbedControl" Source="{Binding LocalFilePath}" Stretch="Uniform" MaxWidth="340" MaxHeight="250" HorizontalAlignment="Left"/>
 
                                         <!-- Upload/Download progress for Image -->
                                         <ProgressBar Grid.Row="1" Height="4" Minimum="0" Maximum="100" Value="{Binding TransferProgress}" Margin="0,4,0,0" BorderThickness="0" x:Name="ImageProgress" Visibility="{Binding IsTransferring, Converter={StaticResource BoolToVis}}"/>
@@ -1138,10 +1139,10 @@
                                     </StackPanel>
                                 </Border>
 
-                                <emoji:TextBlock x:Name="txtMsgContent" Text="{Binding DisplayText}" FontSize="15" Foreground="#2E3338" TextWrapping="Wrap"/>
+                                <emoji:TextBlock x:Name="txtMsgContent" Text="{Binding DisplayText}" FontSize="15" Foreground="#2E3338" TextWrapping="Wrap" HorizontalAlignment="Left"/>
 
                                 <!-- Reactions Display Panel -->
-                                <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0">
+                                <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0" HorizontalAlignment="Left">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal"/>
@@ -1159,24 +1160,54 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
+                            <!-- Avatar on the right (hidden by default) -->
+                            <Grid x:Name="AvatarGridRight" Grid.Column="2" Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center" Visibility="Collapsed">
+                                <Ellipse Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{Binding AvatarBase64, Converter={StaticResource Base64Converter}}" Stretch="UniformToFill"/>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <Ellipse Width="40" Height="40" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                         Fill="#5865F2"
+                                         Visibility="{Binding AvatarBase64, Converter={StaticResource AvatarInitialsVisConverter}}"/>
+                                <TextBlock Text="{Binding Sender, Converter={StaticResource FirstLetterConverter}}"
+                                           FontSize="16" FontWeight="Bold" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding AvatarBase64, Converter={StaticResource AvatarInitialsVisConverter}}"/>
+                            </Grid>
                         </Grid>
                         <DataTemplate.Triggers>
                             <!-- System message styling -->
                             <DataTrigger Binding="{Binding Sender}" Value="System">
-                                <Setter TargetName="AvatarGrid" Property="Visibility" Value="Collapsed"/>
-                                <Setter TargetName="AvatarCol" Property="Width" Value="0"/>
+                                <Setter TargetName="AvatarGridLeft" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
                                 <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="txtMsgContent" Property="Foreground" Value="#747F8D"/>
                                 <Setter TargetName="txtMsgContent" Property="FontSize" Value="13"/>
                                 <Setter TargetName="txtMsgContent" Property="FontStyle" Value="Italic"/>
+                                <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Center"/>
                             </DataTrigger>
                             <!-- File styling -->
                             <DataTrigger Binding="{Binding IsFile}" Value="True">
                                 <Setter TargetName="txtMsgContent" Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
-                            <!-- Me styling (colored name) -->
+                            <!-- Me styling (colored name and right alignment) -->
                             <DataTrigger Binding="{Binding IsMe}" Value="True">
                                 <Setter TargetName="lblSenderName" Property="Foreground" Value="#5865F2"/>
+                                <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
+                                <Setter TargetName="AvatarGridLeft" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="AvatarColRight" Property="Width" Value="50"/>
+                                <Setter TargetName="AvatarGridRight" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="HeaderPanel" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="txtMsgContent" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="txtMsgContent" Property="TextAlignment" Value="Right"/>
+                                <Setter TargetName="FileEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="ImageEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="ImageSenderDetails" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="ReactionsPanel" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="HeaderPanel" Property="FlowDirection" Value="RightToLeft"/>
+                                <Setter TargetName="lblTimestamp" Property="Margin" Value="0,0,8,0"/>
                             </DataTrigger>
 
                             <!-- Draft image styling (dashed purple border) -->
@@ -1192,7 +1223,7 @@
                             <DataTrigger Binding="{Binding IsInImageChannel}" Value="True">
                                 <Setter TargetName="imgMsgAvatar" Property="Visibility" Value="Collapsed"/>
                                 <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
-                                <Setter TargetName="AvatarCol" Property="Width" Value="0"/>
+                                <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
                                 <Setter TargetName="ImageEmbedBorder" Property="MaxWidth" Value="700"/>
                                 <Setter TargetName="imgEmbedControl" Property="MaxWidth" Value="690"/>
                                 <Setter TargetName="imgEmbedControl" Property="MaxHeight" Value="500"/>

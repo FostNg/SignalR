@@ -60,7 +60,7 @@ namespace LocalChat.Core.Services
                         byte[] data = new byte[length];
                         await stream.ReadExactlyAsync(data, 0, length, token);
 
-                        using (var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Write, 4096, true))
+                        using (var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite, 4096, true))
                         {
                             fs.Seek(offset, SeekOrigin.Begin);
                             await fs.WriteAsync(data, token);
@@ -69,7 +69,7 @@ namespace LocalChat.Core.Services
                     else if (action == 1) // DOWNLOAD (Server -> Client)
                     {
                         byte[] buffer = new byte[length];
-                        using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+                        using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true))
                         {
                             fs.Seek(offset, SeekOrigin.Begin);
                             int bytesRead = await fs.ReadAsync(buffer, 0, length, token);
@@ -77,7 +77,10 @@ namespace LocalChat.Core.Services
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    OnLog?.Invoke($"[Server File Error] {ex.Message}");
+                }
             }
         }
     }
@@ -108,7 +111,7 @@ namespace LocalChat.Core.Services
                     long offset = (long)i * ChunkSize;
                     byte[] buffer = new byte[ChunkSize];
 
-                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true))
                     {
                         fs.Seek(offset, SeekOrigin.Begin);
                         int bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length, token);
@@ -130,6 +133,7 @@ namespace LocalChat.Core.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Upload chunk error: {ex.Message}");
+                    throw new Exception($"[Sender] Upload failed: {ex.Message}", ex);
                 }
             });
         }
@@ -140,7 +144,7 @@ namespace LocalChat.Core.Services
             long downloadedBytes = 0;
             
             // Ensure file exists with correct size
-            using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.Write, 4096, true))
+            using (var fs = new FileStream(savePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite, 4096, true))
             {
                 fs.SetLength(totalSize);
             }
@@ -169,7 +173,7 @@ namespace LocalChat.Core.Services
                     byte[] data = new byte[length];
                     await stream.ReadExactlyAsync(data, 0, length, token);
 
-                    using (var fs = new FileStream(savePath, FileMode.Open, FileAccess.Write, FileShare.Write, 4096, true))
+                    using (var fs = new FileStream(savePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite, 4096, true))
                     {
                         fs.Seek(offset, SeekOrigin.Begin);
                         await fs.WriteAsync(data, token);
@@ -181,6 +185,7 @@ namespace LocalChat.Core.Services
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Download chunk error: {ex.Message}");
+                    throw new Exception($"[Receiver] Download failed: {ex.Message}", ex);
                 }
             });
         }
