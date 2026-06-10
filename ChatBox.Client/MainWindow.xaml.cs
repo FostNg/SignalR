@@ -809,7 +809,7 @@ namespace ChatBox.Client
             // Then send text message if there's text
             if (!string.IsNullOrWhiteSpace(cleanText))
             {
-                string text = cleanText;
+                string text = cleanText.Trim();
                 if (txtInput is Emoji.Wpf.RichTextBox emojiBox) {
                     emojiBox.Text = "";
                 } else {
@@ -1039,14 +1039,10 @@ namespace ChatBox.Client
         {
             try
             {
-                if (txtInput is Emoji.Wpf.RichTextBox emojiBox)
-                {
-                    return (emojiBox.Text ?? "").Replace("\r", "").Replace("\n", "").Trim();
-                }
                 var range = new System.Windows.Documents.TextRange(
                     txtInput.Document.ContentStart,
                     txtInput.Document.ContentEnd);
-                return range.Text.Replace("\r", "").Replace("\n", "").Trim();
+                return range.Text.Replace("\r", "").Replace("\n", "");
             }
             catch
             {

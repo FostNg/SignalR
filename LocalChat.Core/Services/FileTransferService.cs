@@ -44,14 +44,15 @@ namespace LocalChat.Core.Services
             {
                 try
                 {
-                    // Header: Action(1 byte) + FileId(16 bytes) + Offset(8 bytes) + Length(4 bytes) = 29 bytes
-                    byte[] header = new byte[29];
-                    await stream.ReadExactlyAsync(header, 0, 29, token);
+                    // Header: Action(1 byte) + FileId(16 bytes) + Offset(8 bytes) + Length(4 bytes) + TotalSize(8 bytes) = 37 bytes
+                    byte[] header = new byte[37];
+                    await stream.ReadExactlyAsync(header, 0, 37, token);
                     
                     byte action = header[0];
                     Guid fileId = new Guid(new ReadOnlySpan<byte>(header, 1, 16));
                     long offset = BitConverter.ToInt64(header, 17);
                     int length = BitConverter.ToInt32(header, 25);
+                    long totalSize = BitConverter.ToInt64(header, 29);
 
                     string filePath = Path.Combine(_storageDir, fileId.ToString() + ".dat");
 
@@ -62,18 +63,29 @@ namespace LocalChat.Core.Services
 
                         using (var fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite, 4096, true))
                         {
+                            try { if (fs.Length < totalSize) fs.SetLength(totalSize); } catch { /* Ignore race conditions on SetLength */ }
                             fs.Seek(offset, SeekOrigin.Begin);
                             await fs.WriteAsync(data, token);
                         }
+                        
+                        // Send ACK so client knows chunk is safely on disk
+                        await stream.WriteAsync(new byte[] { 1 }, 0, 1, token);
                     }
                     else if (action == 1) // DOWNLOAD (Server -> Client)
                     {
-                        byte[] buffer = new byte[length];
+                        byte[] buffer = new byte[81920];
                         using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true))
                         {
                             fs.Seek(offset, SeekOrigin.Begin);
-                            int bytesRead = await fs.ReadAsync(buffer, 0, length, token);
-                            await stream.WriteAsync(buffer, 0, bytesRead, token);
+                            int remaining = length;
+                            while (remaining > 0)
+                            {
+                                int toRead = Math.Min(buffer.Length, remaining);
+                                int bytesRead = await fs.ReadAsync(buffer, 0, toRead, token);
+                                if (bytesRead == 0) break;
+                                await stream.WriteAsync(buffer, 0, bytesRead, token);
+                                remaining -= bytesRead;
+                            }
                         }
                     }
                 }
@@ -114,19 +126,32 @@ namespace LocalChat.Core.Services
                     using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true))
                     {
                         fs.Seek(offset, SeekOrigin.Begin);
-                        int bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length, token);
+                        
+                        int expectedToRead = (int)Math.Min((long)ChunkSize, totalSize - offset);
+                        int totalBytesRead = 0;
+                        while (totalBytesRead < expectedToRead)
+                        {
+                            int bytesRead = await fs.ReadAsync(buffer, totalBytesRead, expectedToRead - totalBytesRead, token);
+                            if (bytesRead == 0) break;
+                            totalBytesRead += bytesRead;
+                        }
 
                         // Build header
-                        byte[] header = new byte[29];
+                        byte[] header = new byte[37];
                         header[0] = 0; // Upload
                         fileId.ToByteArray().CopyTo(header, 1);
                         BitConverter.GetBytes(offset).CopyTo(header, 17);
-                        BitConverter.GetBytes(bytesRead).CopyTo(header, 25);
+                        BitConverter.GetBytes(totalBytesRead).CopyTo(header, 25);
+                        BitConverter.GetBytes(totalSize).CopyTo(header, 29);
 
                         await stream.WriteAsync(header, token);
-                        await stream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
+                        await stream.WriteAsync(buffer.AsMemory(0, totalBytesRead), token);
+                        
+                        // Wait for server to finish writing to disk
+                        byte[] ack = new byte[1];
+                        await stream.ReadExactlyAsync(ack, 0, 1, token);
 
-                        long currentUploaded = Interlocked.Add(ref uploadedBytes, bytesRead);
+                        long currentUploaded = Interlocked.Add(ref uploadedBytes, totalBytesRead);
                         OnUploadProgress?.Invoke((double)currentUploaded / totalSize * 100);
                     }
                 }
@@ -161,11 +186,12 @@ namespace LocalChat.Core.Services
                     int length = (int)Math.Min((long)ChunkSize, totalSize - offset);
 
                     // Build header
-                    byte[] header = new byte[29];
+                    byte[] header = new byte[37];
                     header[0] = 1; // Download
                     fileId.ToByteArray().CopyTo(header, 1);
                     BitConverter.GetBytes(offset).CopyTo(header, 17);
                     BitConverter.GetBytes(length).CopyTo(header, 25);
+                    BitConverter.GetBytes(totalSize).CopyTo(header, 29);
 
                     await stream.WriteAsync(header, token);
 

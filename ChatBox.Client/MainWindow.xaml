@@ -1139,7 +1139,14 @@
                                     </StackPanel>
                                 </Border>
 
-                                <TextBox x:Name="txtMsgContent" Text="{Binding DisplayText, Mode=OneWay}" FontSize="15" Foreground="#2E3338" TextWrapping="Wrap" HorizontalAlignment="Left" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0" Margin="-2,0,0,0"/>
+                                <emoji:RichTextBox x:Name="txtMsgContent" Text="{Binding DisplayText, Mode=OneWay}" FontSize="15" Foreground="#2E3338" HorizontalAlignment="Left" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0" Margin="-6,-2,0,0" IsDocumentEnabled="True">
+                                    <emoji:RichTextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="0"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </emoji:RichTextBox.Resources>
+                                </emoji:RichTextBox>
 
                                 <!-- Reactions Display Panel -->
                                 <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0" HorizontalAlignment="Left">
@@ -1201,7 +1208,6 @@
                                 <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="HeaderPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="txtMsgContent" Property="HorizontalAlignment" Value="Right"/>
-                                <Setter TargetName="txtMsgContent" Property="TextAlignment" Value="Right"/>
                                 <Setter TargetName="FileEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ImageEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ImageSenderDetails" Property="HorizontalAlignment" Value="Right"/>
