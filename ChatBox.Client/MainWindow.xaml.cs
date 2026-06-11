@@ -784,13 +784,14 @@ namespace ChatBox.Client
                 btn.Click += (s, e) =>
                 {
                     // Append emoji text to RichTextBox properly
-                    var range = new System.Windows.Documents.TextRange(
-                        txtInput.Document.ContentEnd,
-                        txtInput.Document.ContentEnd);
+                    var range = new System.Windows.Documents.TextRange(txtInput.Selection.Start, txtInput.Selection.End);
                     range.Text = trimmed;
-                    txtInput.CaretPosition = txtInput.Document.ContentEnd;
+                    txtInput.CaretPosition = range.End;
+
                     if (lblInputPlaceholder != null)
                         lblInputPlaceholder.Visibility = Visibility.Collapsed;
+                    
+                    txtInput.Focus();
                 };
                 panel.Children.Add(btn);
             }
@@ -1039,6 +1040,9 @@ namespace ChatBox.Client
         {
             try
             {
+                if (txtInput is Emoji.Wpf.RichTextBox emojiBox) {
+                    return emojiBox.Text.Replace("\r", "").Replace("\n", "");
+                }
                 var range = new System.Windows.Documents.TextRange(
                     txtInput.Document.ContentStart,
                     txtInput.Document.ContentEnd);
@@ -1163,6 +1167,14 @@ namespace ChatBox.Client
             }
             if (_chatViewMessages.Count > 0)
                 lstChatMessages.ScrollIntoView(_chatViewMessages[_chatViewMessages.Count - 1]);
+        }
+
+        private void BtnScrollToBottom_Click(object sender, RoutedEventArgs e)
+        {
+            if (_chatViewMessages.Count > 0)
+            {
+                lstChatMessages.ScrollIntoView(_chatViewMessages[_chatViewMessages.Count - 1]);
+            }
         }
 
         private bool IsMessageInCurrentChannel(ChatMessage msg)

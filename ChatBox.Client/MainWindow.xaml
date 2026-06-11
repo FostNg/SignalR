@@ -1049,12 +1049,12 @@
                             </Grid>
                             
                             <!-- Message Content Pane -->
-                            <StackPanel x:Name="ContentPanel" Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-                                <StackPanel x:Name="HeaderPanel" Orientation="Horizontal" Margin="0,0,0,4" HorizontalAlignment="Left">
+                            <StackPanel x:Name="ContentPanel" Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Top">
+                                <StackPanel x:Name="HeaderPanel" Orientation="Horizontal" Margin="0,0,0,4">
                                     <TextBlock x:Name="lblSenderName" Text="{Binding Sender}" FontWeight="Bold" FontSize="14" Foreground="#060607" VerticalAlignment="Bottom"/>
                                     <TextBlock x:Name="lblTimestamp" Text="{Binding Timestamp}" FontSize="11" Foreground="#747F8D" Margin="8,0,0,0" VerticalAlignment="Bottom"/>
                                 </StackPanel>                                <!-- File Attachment Embed (Discord Embed look) -->
-                                <Border x:Name="FileEmbedBorder" Background="#F2F3F5" CornerRadius="4" BorderBrush="#E3E5E8" BorderThickness="1" Padding="12" Margin="0,4,0,5" Visibility="{Binding ShowFileControl, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Left" Width="350">
+                                <Border x:Name="FileEmbedBorder" Background="#F2F3F5" CornerRadius="4" BorderBrush="#E3E5E8" BorderThickness="1" Padding="12" Margin="0,4,0,5" Visibility="{Binding ShowFileControl, Converter={StaticResource BoolToVis}}" Width="350">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -1093,7 +1093,7 @@
                                     </Grid>
                                 </Border>
                                 <!-- Image Attachment (Discord style inline image viewer) -->
-                                <Border x:Name="ImageEmbedBorder" CornerRadius="8" Margin="0,4,0,5" Visibility="{Binding ShowImageControl, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Left" MaxWidth="350" Background="#F2F3F5" BorderThickness="1" BorderBrush="#E3E5E8" Padding="4" Cursor="Hand" MouseLeftButtonDown="ChatImage_Click" Tag="{Binding}" RenderTransformOrigin="0.5,0.5">
+                                <Border x:Name="ImageEmbedBorder" CornerRadius="8" Margin="0,4,0,5" Visibility="{Binding ShowImageControl, Converter={StaticResource BoolToVis}}" MaxWidth="350" Background="#F2F3F5" BorderThickness="1" BorderBrush="#E3E5E8" Padding="4" Cursor="Hand" MouseLeftButtonDown="ChatImage_Click" Tag="{Binding}" RenderTransformOrigin="0.5,0.5">
                                     <Border.RenderTransform>
                                         <ScaleTransform ScaleX="1.0" ScaleY="1.0"/>
                                     </Border.RenderTransform>
@@ -1126,7 +1126,7 @@
                                 </Border>
 
                                 <!-- Sender Info Details (only visible in Images Channel when Selected/Clicked) -->
-                                <Border x:Name="ImageSenderDetails" Background="#F2F3F5" CornerRadius="0,0,8,8" Padding="12,8" BorderBrush="#E3E5E8" BorderThickness="1,0,1,1" Margin="0,-5,0,5" Visibility="Collapsed" MaxWidth="700" HorizontalAlignment="Left">
+                                <Border x:Name="ImageSenderDetails" Background="#F2F3F5" CornerRadius="0,0,8,8" Padding="12,8" BorderBrush="#E3E5E8" BorderThickness="1,0,1,1" Margin="0,-5,0,5" Visibility="Collapsed" MaxWidth="700">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Ellipse Width="24" Height="24" Margin="0,0,8,0">
                                             <Ellipse.Fill>
@@ -1139,17 +1139,10 @@
                                     </StackPanel>
                                 </Border>
 
-                                <emoji:RichTextBox x:Name="txtMsgContent" Text="{Binding DisplayText, Mode=OneWay}" FontSize="15" Foreground="#2E3338" HorizontalAlignment="Left" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0" Margin="-6,-2,0,0" IsDocumentEnabled="True">
-                                    <emoji:RichTextBox.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="0"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                        </Style>
-                                    </emoji:RichTextBox.Resources>
-                                </emoji:RichTextBox>
+                                <emoji:TextBlock x:Name="txtMsgContent" Text="{Binding DisplayText, Mode=OneWay}" FontSize="15" Foreground="#2E3338" Background="Transparent" Margin="0,-2,0,0" TextWrapping="Wrap" />
 
                                 <!-- Reactions Display Panel -->
-                                <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0" HorizontalAlignment="Left">
+                                <ItemsControl x:Name="ReactionsPanel" ItemsSource="{Binding Reactions}" Margin="0,4,0,0">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal"/>
@@ -1184,21 +1177,16 @@
                             </Grid>
                         </Grid>
                         <DataTemplate.Triggers>
-                            <!-- System message styling -->
-                            <DataTrigger Binding="{Binding Sender}" Value="System">
-                                <Setter TargetName="AvatarGridLeft" Property="Visibility" Value="Collapsed"/>
-                                <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
-                                <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
-                                <Setter TargetName="txtMsgContent" Property="Foreground" Value="#747F8D"/>
-                                <Setter TargetName="txtMsgContent" Property="FontSize" Value="13"/>
-                                <Setter TargetName="txtMsgContent" Property="FontStyle" Value="Italic"/>
-                                <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Center"/>
+                            <DataTrigger Binding="{Binding IsMe}" Value="False">
+                                <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="HeaderPanel" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="txtMsgContent" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="txtMsgContent" Property="TextAlignment" Value="Left"/>
+                                <Setter TargetName="FileEmbedBorder" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="ImageEmbedBorder" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="ImageSenderDetails" Property="HorizontalAlignment" Value="Left"/>
+                                <Setter TargetName="ReactionsPanel" Property="HorizontalAlignment" Value="Left"/>
                             </DataTrigger>
-                            <!-- File styling -->
-                            <DataTrigger Binding="{Binding IsFile}" Value="True">
-                                <Setter TargetName="txtMsgContent" Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <!-- Me styling (colored name and right alignment) -->
                             <DataTrigger Binding="{Binding IsMe}" Value="True">
                                 <Setter TargetName="lblSenderName" Property="Foreground" Value="#5865F2"/>
                                 <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
@@ -1208,12 +1196,29 @@
                                 <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="HeaderPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="txtMsgContent" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="txtMsgContent" Property="TextAlignment" Value="Right"/>
                                 <Setter TargetName="FileEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ImageEmbedBorder" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ImageSenderDetails" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="ReactionsPanel" Property="HorizontalAlignment" Value="Right"/>
                                 <Setter TargetName="HeaderPanel" Property="FlowDirection" Value="RightToLeft"/>
                                 <Setter TargetName="lblTimestamp" Property="Margin" Value="8,0,8,0"/>
+                            </DataTrigger>
+
+                            <!-- System message styling -->
+                            <DataTrigger Binding="{Binding Sender}" Value="System">
+                                <Setter TargetName="AvatarGridLeft" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="AvatarColLeft" Property="Width" Value="0"/>
+                                <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="txtMsgContent" Property="Foreground" Value="#747F8D"/>
+                                <Setter TargetName="txtMsgContent" Property="FontSize" Value="13"/>
+                                <Setter TargetName="txtMsgContent" Property="FontStyle" Value="Italic"/>
+                                <Setter TargetName="ContentPanel" Property="HorizontalAlignment" Value="Center"/>
+                                <Setter TargetName="txtMsgContent" Property="TextAlignment" Value="Center"/>
+                            </DataTrigger>
+                            <!-- File styling -->
+                            <DataTrigger Binding="{Binding IsFile}" Value="True">
+                                <Setter TargetName="txtMsgContent" Property="Visibility" Value="Collapsed"/>
                             </DataTrigger>
 
                             <!-- Draft image styling (dashed purple border) -->
@@ -1269,6 +1274,16 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+
+            <!-- Scroll to Bottom Button -->
+            <Button x:Name="btnScrollToBottom" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,30,20" Width="40" Height="40" Background="#5865F2" Foreground="White" BorderThickness="0" Cursor="Hand" Click="BtnScrollToBottom_Click" Visibility="Visible" ToolTip="Go to latest message">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="20"/>
+                    </Style>
+                </Button.Resources>
+                <TextBlock Text="↓" FontSize="20" FontWeight="Bold" Margin="0,-2,0,0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
 
             <!-- Dedicated Images-only Gallery view -->
             <ScrollViewer x:Name="scrollImageGallery" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Visibility="Collapsed" Background="Transparent" PreviewMouseWheel="SmoothScrollViewer_PreviewMouseWheel">
