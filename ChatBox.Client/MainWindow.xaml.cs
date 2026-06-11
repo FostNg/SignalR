@@ -113,7 +113,6 @@ namespace ChatBox.Client
         private string _avatarBase64 = "";
         private string _displayName = "";
         private CancellationTokenSource _cts = new CancellationTokenSource();
-        private ChatMessage? _currentTransferMessage;
         private ObservableCollection<ChatMessage> _pendingImages = new ObservableCollection<ChatMessage>();
 
         private System.Timers.Timer? _typingDebounceTimer;
@@ -135,9 +134,6 @@ namespace ChatBox.Client
 
             // Bind chat list once — ObservableCollection handles incremental UI updates
             lstChatMessages.ItemsSource = _chatViewMessages;
-
-            _fileClient.OnUploadProgress += UpdateProgress;
-            _fileClient.OnDownloadProgress += UpdateProgress;
         }
 
         public class UserConfig
@@ -869,17 +865,18 @@ namespace ChatBox.Client
                 _allMessages.Add(msg);
                 if (IsMessageInCurrentChannel(msg))
                     _chatViewMessages.Add(msg);
-                _currentTransferMessage = msg;
 
                 if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                 {
                     await _hubConnection.InvokeAsync("UpdateUploadStatus", _displayName, fileInfo.Name, "Uploading");
                 }
 
-                await _fileClient.UploadFileAsync(_serverIp, filePath, fileId);
+                await _fileClient.UploadFileAsync(_serverIp, filePath, fileId, (pct) => 
+                {
+                    Dispatcher.Invoke(() => msg.TransferProgress = pct);
+                });
 
                 msg.IsTransferring = false;
-                _currentTransferMessage = null;
 
                 if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                 {
@@ -890,7 +887,6 @@ namespace ChatBox.Client
             catch (Exception ex)
             {
                 MessageBox.Show("Upload error: " + ex.Message);
-                if (_currentTransferMessage != null) _currentTransferMessage.IsTransferring = false;
             }
         }
 
@@ -945,7 +941,6 @@ namespace ChatBox.Client
                 {
                     msg.IsTransferring = true;
                     msg.TransferProgress = 0;
-                    _currentTransferMessage = msg;
 
                     try
                     {
@@ -954,13 +949,15 @@ namespace ChatBox.Client
                             await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, msg.Content, "Downloading");
                         }
 
-                        await _fileClient.DownloadFileAsync(_serverIp, dialog.FileName, Guid.Parse(msg.FileId), msg.FileSize);
+                        await _fileClient.DownloadFileAsync(_serverIp, dialog.FileName, Guid.Parse(msg.FileId), msg.FileSize, (pct) => 
+                        {
+                            Dispatcher.Invoke(() => msg.TransferProgress = pct);
+                        });
                         
                         if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                         {
                             await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, msg.Content, "Downloaded");
                         }
-                        MessageBox.Show("Download complete!");
                     }
                     catch (Exception ex)
                     {
@@ -969,20 +966,9 @@ namespace ChatBox.Client
                     finally
                     {
                         msg.IsTransferring = false;
-                        _currentTransferMessage = null;
                     }
                 }
             }
-        }
-
-        private void UpdateProgress(double percent)
-        {
-            Dispatcher.Invoke(() => {
-                if (_currentTransferMessage != null)
-                {
-                    _currentTransferMessage.TransferProgress = percent;
-                }
-            });
         }
 
         private void BtnShowSettings_Click(object sender, RoutedEventArgs e)
@@ -1220,19 +1206,16 @@ namespace ChatBox.Client
                 fileMsg.TransferProgress = 0;
 
                 var tempClient = new FileClient();
-                tempClient.OnDownloadProgress += (pct) => 
-                {
-                    Dispatcher.Invoke(() => {
-                        fileMsg.TransferProgress = pct;
-                    });
-                };
 
                 if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                 {
                     await _hubConnection.InvokeAsync("UpdateDownloadStatus", _displayName, fileMsg.Content, "Downloading");
                 }
 
-                await tempClient.DownloadFileAsync(_serverIp, cachedPath, Guid.Parse(fileMsg.FileId), fileMsg.FileSize);
+                await tempClient.DownloadFileAsync(_serverIp, cachedPath, Guid.Parse(fileMsg.FileId), fileMsg.FileSize, (pct) => 
+                {
+                    Dispatcher.Invoke(() => fileMsg.TransferProgress = pct);
+                });
                 fileMsg.LocalFilePath = cachedPath;
 
                 if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
@@ -1625,7 +1608,10 @@ namespace ChatBox.Client
                 {
                     try
                     {
-                        await _fileClient.UploadFileAsync(_serverIp, msg.LocalFilePath, Guid.Parse(msg.FileId));
+                        await _fileClient.UploadFileAsync(_serverIp, msg.LocalFilePath, Guid.Parse(msg.FileId), (pct) => 
+                        {
+                            Dispatcher.Invoke(() => msg.TransferProgress = pct);
+                        });
                         msg.IsTransferring = false;
                         if (_hubConnection?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
                         {

@@ -105,7 +105,7 @@ namespace LocalChat.Core.Services
         public event Action<double>? OnUploadProgress;
         public event Action<double>? OnDownloadProgress;
 
-        public async Task UploadFileAsync(string serverIp, string filePath, Guid fileId)
+        public async Task UploadFileAsync(string serverIp, string filePath, Guid fileId, Action<double>? onProgress = null)
         {
             var fileInfo = new FileInfo(filePath);
             long totalSize = fileInfo.Length;
@@ -152,7 +152,9 @@ namespace LocalChat.Core.Services
                         await stream.ReadExactlyAsync(ack, 0, 1, token);
 
                         long currentUploaded = Interlocked.Add(ref uploadedBytes, totalBytesRead);
-                        OnUploadProgress?.Invoke((double)currentUploaded / totalSize * 100);
+                        double pct = (double)currentUploaded / totalSize * 100;
+                        OnUploadProgress?.Invoke(pct);
+                        onProgress?.Invoke(pct);
                     }
                 }
                 catch (Exception ex)
@@ -163,7 +165,7 @@ namespace LocalChat.Core.Services
             });
         }
 
-        public async Task DownloadFileAsync(string serverIp, string savePath, Guid fileId, long totalSize)
+        public async Task DownloadFileAsync(string serverIp, string savePath, Guid fileId, long totalSize, Action<double>? onProgress = null)
         {
             int totalChunks = (int)Math.Ceiling((double)totalSize / ChunkSize);
             long downloadedBytes = 0;
@@ -205,7 +207,9 @@ namespace LocalChat.Core.Services
                         await fs.WriteAsync(data, token);
 
                         long currentDownloaded = Interlocked.Add(ref downloadedBytes, length);
-                        OnDownloadProgress?.Invoke((double)currentDownloaded / totalSize * 100);
+                        double pct = (double)currentDownloaded / totalSize * 100;
+                        OnDownloadProgress?.Invoke(pct);
+                        onProgress?.Invoke(pct);
                     }
                 }
                 catch (Exception ex)
