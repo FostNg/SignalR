@@ -1013,8 +1013,8 @@ namespace ChatBox.Client
         {
             if (lblInputPlaceholder != null)
             {
-                // RichTextBox.Text includes \r\n even when empty — use TextRange instead
-                string cleanText = GetInputText();
+                var range = new System.Windows.Documents.TextRange(txtInput.Document.ContentStart, txtInput.Document.ContentEnd);
+                string cleanText = range.Text.Replace("\r", "").Replace("\n", "");
                 lblInputPlaceholder.Visibility = string.IsNullOrEmpty(cleanText) ? Visibility.Visible : Visibility.Collapsed;
             }
 
